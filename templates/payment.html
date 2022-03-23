@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stripe Payment</title>
+    <script src="https://js.stripe.com/v3"></script>
+    <!--    <script src="{{ url_for('static', path='script.js') }}"></script>-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+
+<input type="text" class="form-control" placeholder="Amount to pay" id="amount" aria-label="amount">
+<div id="card-element">
+
+
+</div>
+<button type="button" class="btn btn-success" onclick="handleSubmit()" id="submit">Pay</button>
+
+<button type="button" class="btn btn-success" id="payment">Initialize Stripe</button>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+
+<script>
+    var createCheckoutSession = function(amount) {
+    return fetch("/create-payment-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: amount
+      })
+    }).then(function(result) {
+      return result.json();
+    });
+  };
+
+const stripe = Stripe("pk_test_51KZ81bHdxycVYLX5Yjcqa4JYJOx2LkgQwJkgBodbJD7RuHa9IXJf4YpMkPx3o6Flzf1wx0f4lFwrdOuYpV9Tubyp00HZSvBXjq");
+
+document.addEventListener("DOMContentLoaded", function(event) {
+    document
+    .getElementById("payment")
+    .addEventListener("click", function(evt) {
+    var amount = document.getElementById('amount').value;
+        createCheckoutSession(amount).then(function(data) {
+    const appearance = {
+    theme: 'stripe'
+  };
+  elements = stripe.elements({ appearance, clientSecret: data.paymentIntent })
+
+  const paymentElement = elements.create("payment");
+  paymentElement.mount("#card-element");
+
+
+            });
+        });
+
+});
+
+
+async function handleSubmit(e) {
+
+  const { error } = await stripe.confirmPayment({
+    elements,
+    confirmParams: {
+      // Make sure to change this to your payment completion page
+      return_url: "http://localhost:8000/success",
+    },
+  });
+
+  if (error.type === "card_error" || error.type === "validation_error") {
+    showMessage(error.message);
+  } else {
+    showMessage("An unexpected error occured.");
+  }
+
+}
+
+</script>
+
+</body>
+
+
+</html>
