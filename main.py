@@ -27,6 +27,8 @@ from starlette.requests import Request
 from functools import lru_cache
 # to get a string like this run:
 # openssl rand -hex 32
+from strawberry.types import Info
+
 import helper.config
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -34,6 +36,8 @@ from helper import config
 from helper.helper import single_user, item_list, convert_dict, item_list2, convert_categories, categories_list, \
     lookup_items
 from models.UserModel import TokenData, UserModel
+import strawberry
+from strawberry.fastapi import GraphQLRouter
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
@@ -207,6 +211,25 @@ html = """
     </body>
 </html>
 """
+
+
+@strawberry.type
+class User:
+    full_name: str
+
+
+@strawberry.type
+class Query:
+    @strawberry.field
+    def hello(self, name: str) -> str:
+        user = get_user(fake_users_db, name)
+        return user
+
+
+schema = strawberry.Schema(query=Query)
+
+graphql_app = GraphQLRouter(schema)
+app.include_router(graphql_app, prefix="/graphql")
 
 
 def verify_password(plain_password, hashed_password):
