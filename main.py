@@ -248,16 +248,23 @@ class Query:
     items: typing.List[Item]
 
 
-def get_books():
+def get_books(book_id: int):
+    if book_id == 5:
+        return [
+            Book(
+                title='The Great Gatsby',
+                author='F. Scott Fitzgerald',
+            ),
+
+            Book(
+                title='The Lord Of The Rings',
+                author='J. R. R. Tolkien',
+            ),
+        ]
     return [
         Book(
-            title='The Great Gatsby',
-            author='F. Scott Fitzgerald',
-        ),
-
-        Book(
-            title='The Lord Of The Rings',
-            author='J. R. R. Tolkien',
+            title='No item Found',
+            author='No author Found',
         ),
     ]
 
