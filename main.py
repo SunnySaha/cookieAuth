@@ -27,6 +27,7 @@ from starlette.requests import Request
 from functools import lru_cache
 # to get a string like this run:
 # openssl rand -hex 32
+from strawberry.tools import merge_types
 from strawberry.types import Info
 
 import helper.config
@@ -214,19 +215,101 @@ html = """
 
 
 @strawberry.type
-class User:
-    full_name: str
+class Book:
+    title: str
+    author: str
+
+
+@strawberry.type
+class Item:
+    name: str
+    price: float
+
+
+@strawberry.type
+class Order:
+    amount: float
+    paid: bool
+    payment_method: str
 
 
 @strawberry.type
 class Query:
-    @strawberry.field
-    def hello(self, name: str) -> str:
-        user = get_user(fake_users_db, name)
-        return user
+    books: typing.List[Book]
 
 
-schema = strawberry.Schema(query=Query)
+@strawberry.type
+class Query:
+    orders: typing.List[Order]
+
+
+@strawberry.type
+class Query:
+    items: typing.List[Item]
+
+
+def get_books():
+    return [
+        Book(
+            title='The Great Gatsby',
+            author='F. Scott Fitzgerald',
+        ),
+
+        Book(
+            title='The Lord Of The Rings',
+            author='J. R. R. Tolkien',
+        ),
+    ]
+
+
+def get_orders():
+    return [
+        Order(
+            amount=33.02,
+            paid=True,
+            payment_method='Card'
+        ),
+
+        Order(
+            amount=38.02,
+            paid=False,
+            payment_method='Cash'
+        ),
+    ]
+
+
+def get_items():
+    return [
+        Item(
+            name='Chicken Tikka',
+            price=25.02,
+        ),
+
+        Item(
+            name='Chicken Massala',
+            price=18.62,
+        ),
+    ]
+
+
+@strawberry.type
+class QueryA:
+    books: typing.List[Book] = strawberry.field(resolver=get_books)
+
+
+@strawberry.type
+class QueryB:
+    items: typing.List[Item] = strawberry.field(resolver=get_items)
+
+
+@strawberry.type
+class QueryC:
+    orders: typing.List[Order] = strawberry.field(resolver=get_orders)
+
+
+ComboQuery = merge_types("ComboQuery", (QueryB, QueryA, QueryC))
+schema = strawberry.Schema(query=ComboQuery)
+
 
 graphql_app = GraphQLRouter(schema)
 app.include_router(graphql_app, prefix="/graphql")
