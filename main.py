@@ -5,6 +5,7 @@ from typing import Optional
 import base64
 from datetime import datetime, timedelta
 from bson import ObjectId
+from graphql import NoSchemaIntrospectionCustomRule
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import motor.motor_asyncio
@@ -27,6 +28,7 @@ from starlette.requests import Request
 from functools import lru_cache
 # to get a string like this run:
 # openssl rand -hex 32
+from strawberry.extensions import AddValidationRules
 from strawberry.tools import merge_types
 from strawberry.types import Info
 
@@ -217,7 +219,7 @@ html = """
 @strawberry.type
 class Book:
     title: str
-    author: str
+    author: str | None = None
 
 
 @strawberry.type
@@ -316,7 +318,6 @@ class QueryC:
 
 ComboQuery = merge_types("ComboQuery", (QueryB, QueryA, QueryC))
 schema = strawberry.Schema(query=ComboQuery)
-
 
 graphql_app = GraphQLRouter(schema)
 app.include_router(graphql_app, prefix="/graphql")
