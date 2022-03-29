@@ -1,17 +1,15 @@
 import shutil
 import typing
-from json import dumps
 from typing import Optional
 import base64
 from datetime import datetime, timedelta
 from bson import ObjectId
-from graphql import NoSchemaIntrospectionCustomRule
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import motor.motor_asyncio
 from pydantic import BaseModel
 import stripe
-from fastapi import Depends, FastAPI, HTTPException, Body, WebSocket, WebSocketDisconnect, File, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Body, WebSocket, File, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2
 from fastapi.security.base import SecurityBase, SecurityBaseModel
@@ -28,13 +26,11 @@ from starlette.requests import Request
 from functools import lru_cache
 # to get a string like this run:
 # openssl rand -hex 32
-from strawberry.extensions import AddValidationRules
 from strawberry.tools import merge_types
-from strawberry.types import Info
-
-import helper.config
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from strawberry.types import Info
+
 from helper import config
 from helper.helper import single_user, item_list, convert_dict, item_list2, convert_categories, categories_list, \
     lookup_items
@@ -235,6 +231,18 @@ class Order:
     payment_method: str
 
 
+def custom_context_dependency() -> str:
+    return "John"
+
+
+async def get_context(
+    custom_value=Depends(custom_context_dependency),
+):
+    return {
+        "custom_value": custom_value,
+    }
+
+
 @strawberry.type
 class Query:
     books: typing.List[Book]
@@ -271,7 +279,7 @@ def get_books(book_id: int):
     ]
 
 
-def get_orders():
+def get_orders(self, info: Info):
     return [
         Order(
             amount=33.02,
@@ -283,6 +291,11 @@ def get_orders():
             amount=38.02,
             paid=False,
             payment_method='Cash'
+        ),
+        Order(
+            amount=25.02,
+            paid=False,
+            payment_method=f"Hello {info.context['custom_value']}"
         ),
     ]
 
@@ -319,7 +332,7 @@ class QueryC:
 ComboQuery = merge_types("ComboQuery", (QueryB, QueryA, QueryC))
 schema = strawberry.Schema(query=ComboQuery)
 
-graphql_app = GraphQLRouter(schema)
+graphql_app = GraphQLRouter(schema,  context_getter=get_context, graphiql=True)
 app.include_router(graphql_app, prefix="/graphql")
 
 
